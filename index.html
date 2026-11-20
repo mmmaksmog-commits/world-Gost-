@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Оформитель by mysik</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Tinos:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+  /* Слева — данные (титульник, текст, источники, настройки), справа — листы документа как в Word. */
+  :root {
+    --bg: #14161b; --panel: #1c1f26; --panel2: #262a33; --line: #2c323e; --fg: #e9ecf1; --muted: #949bab; --faint: #6b7282;
+    --accent: #2fb36e; --amber: #f2b33d; --red: #f0525f;
+    --f: "Onest", "Segoe UI", system-ui, sans-serif;
+    --serif: "Times New Roman", "Tinos", "Liberation Serif", serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--fg); font: 14px/1.45 var(--f); }
+  .app { display: grid; grid-template-columns: 460px minmax(0, 1fr); height: 100%; }
+  aside { border-right: 1px solid var(--line); display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-height: 0; }
+  .top { padding: 16px 18px 10px; display: flex; align-items: center; gap: 10px; }
+  .top i { width: 28px; height: 28px; border-radius: 8px; background: var(--accent); display: grid; place-items: center; font-style: normal; font-weight: 700; color: #fff; font-family: var(--serif); }
+  .top b { font-size: 16px; } .top span { color: var(--faint); }
+  .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 0 18px; background: var(--panel); border-radius: 12px; padding: 4px; }
+  .tabs button { appearance: none; border: 0; background: none; color: var(--muted); padding: 8px 0; border-radius: 9px; cursor: pointer; font: 500 13px var(--f); }
+  .tabs button.on { background: var(--panel2); color: var(--fg); }
+  .pane { overflow-y: auto; padding: 16px 18px 40px; display: none; }
+  .pane.on { display: grid; gap: 12px; align-content: start; }
+  label { display: grid; gap: 5px; color: var(--muted); font-size: 12.5px; }
+  input, textarea, select { width: 100%; background: var(--panel); color: var(--fg); border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 11px; font: 14px var(--f); }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
+  textarea { resize: vertical; }
+  #text { min-height: 52vh; font: 13.5px/1.55 ui-monospace, Consolas, monospace; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .hint { color: var(--faint); font-size: 12px; margin: 0; }
+  .card { background: var(--panel); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
+  .card h4 { margin: 0; font-size: 13px; color: var(--fg); }
+  .stats { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { background: var(--panel); border-radius: 999px; padding: 4px 10px; font-size: 12px; color: var(--muted); }
+  .chip b { color: var(--fg); }
+  details.help { background: var(--panel); border-radius: 12px; }
+  details.help summary { cursor: pointer; padding: 10px 14px; font-weight: 600; font-size: 13px; }
+  details.help div { padding: 0 14px 12px; color: var(--muted); font-size: 12.5px; }
+  details.help code { background: var(--bg); padding: 1px 5px; border-radius: 5px; color: var(--fg); }
+  .src { background: var(--panel); border-radius: 14px; padding: 12px; display: grid; gap: 8px; }
+  .src .row { display: grid; grid-template-columns: minmax(0, 1fr) 30px; gap: 8px; }
+  .src .out { font-family: var(--serif); font-size: 14px; color: #cfd3db; background: var(--bg); padding: 8px 10px; border-radius: 8px; }
+  .x { appearance: none; border: 0; background: var(--panel2); color: var(--muted); width: 30px; height: 36px; border-radius: 8px; cursor: pointer; font-size: 15px; }
+  .x:hover { color: var(--red); }
+  .add { appearance: none; border: 1.5px dashed var(--line); background: none; color: var(--muted); border-radius: 10px; padding: 9px; cursor: pointer; font: 500 13.5px var(--f); }
+  .add:hover { color: var(--fg); border-color: var(--faint); }
+  .check { display: flex; align-items: center; gap: 8px; color: var(--fg); font-size: 13.5px; }
+  .check input { width: auto; accent-color: var(--accent); }
+
+  main { display: grid; grid-template-rows: auto minmax(0, 1fr); min-width: 0; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--line); }
+  .bar .grow { flex: 1; }
+  .btn { appearance: none; border: 0; border-radius: 11px; padding: 10px 16px; cursor: pointer; font: 600 14px var(--f); color: #fff; background: var(--accent); }
+  .warn { color: var(--amber); font-size: 12.5px; }
+  .paper { overflow: auto; background: #0f1115; padding: 26px; display: grid; justify-content: center; gap: 22px; align-content: start; }
+  /* лист A4: 210×297 мм, поля 30/15/20/20 */
+  .page { width: 595px; min-height: 842px; background: #fff; color: #111; box-shadow: 0 16px 40px rgba(0,0,0,.45);
+          padding: 57px 43px 57px 85px; font-family: var(--serif); font-size: 13.3px; line-height: 1.5; position: relative; }
+  .page p { margin: 0; text-align: justify; text-indent: 35px; }
+  .page .h1 { font-weight: 700; text-indent: 35px; text-align: left; margin: 0 0 13px; }
+  .page .st { font-weight: 700; text-align: center; text-indent: 0; margin: 0 0 13px; }
+  .page .h2 { font-weight: 700; text-indent: 35px; text-align: left; margin: 13px 0; }
+  .page .cap { text-indent: 0; text-align: left; margin-top: 6px; }
+  .page .fig { text-indent: 0; text-align: center; margin: 6px 0; }
+  .page table { width: 100%; border-collapse: collapse; font-size: 11.4px; line-height: 1.2; margin-bottom: 8px; }
+  .page td { border: 1px solid #111; padding: 2px 4px; vertical-align: top; }
+  .page tr:first-child td { font-weight: 700; text-align: center; }
+  .page .toc { text-indent: 0; display: flex; gap: 4px; }
+  .page .toc span:nth-child(2) { flex: 1; border-bottom: 1px dotted #555; transform: translateY(-4px); }
+  .page .toc.l2 { padding-left: 18px; }
+  .page .num { position: absolute; bottom: 24px; left: 0; right: 0; text-align: center; font-size: 12px; }
+  .title { display: flex; flex-direction: column; text-align: center; line-height: 1.25; min-height: 728px; }
+  .title p { text-indent: 0; text-align: center; }
+  .title .sign { text-align: left; margin-left: 46%; line-height: 1.45; }
+  .title .grow { flex: 1; }
+  .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: #2a2e38; padding: 10px 16px; border-radius: 12px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90vw; }
+  .toast.show { opacity: 1; }
+  @media (max-width: 980px) {
+    .app { grid-template-columns: 1fr; height: auto; }
+    aside { border-right: 0; } .pane { max-height: none; }
+    .page { transform-origin: top left; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="top"><i>Г</i><b>Оформитель</b><span>by mysik · ГОСТ 7.32</span></div>
+    <div class="tabs">
+      <button data-p="title" class="on">Титульник</button>
+      <button data-p="body">Текст</button>
+      <button data-p="refs">Источники</button>
+      <button data-p="opts">Настройки</button>
+    </div>
+
+    <!-- титульный лист -->
+    <div class="pane on" id="p-title">
+      <label>Тип работы
+        <select id="kind">
+          <option value="practice">Отчёт по практике</option>
+          <option value="course">Курсовая работа</option>
+          <option value="essay">Реферат</option>
+          <option value="lab">Лабораторная работа</option>
+        </select>
+      </label>
+      <label>Министерство<input id="ministry"></label>
+      <label>Вуз — полное название<textarea id="uni" rows="2"></textarea></label>
+      <div class="two">
+        <label>Институт / факультет<input id="faculty"></label>
+        <label>Кафедра<input id="dept"></label>
+      </div>
+      <label id="l-practice">Вид практики (в родительном падеже)<input id="practice" placeholder="производственной (технологической) практике"></label>
+      <label id="l-org">Место практики<input id="org" placeholder="ООО «Компания», г. Город"></label>
+      <label id="l-disc">Дисциплина<input id="disc"></label>
+      <label>Тема<textarea id="topic" rows="2"></textarea></label>
+      <div class="two">
+        <label>Студент — ФИО<input id="student" placeholder="Иванов Иван Иванович"></label>
+        <label>Группа<input id="group"></label>
+      </div>
+      <div class="two">
+        <label>Руководитель — должность<input id="supPos" placeholder="доцент кафедры, к.т.н."></label>
+        <label>Руководитель — ФИО<input id="sup"></label>
+      </div>
+      <div class="two" id="l-orgsup">
+        <label>Руководитель от организации — должность<input id="orgSupPos"></label>
+        <label>Руководитель от организации — ФИО<input id="orgSup"></label>
+      </div>
+      <div class="two">
+        <label>Город<input id="city"></label>
+        <label>Год<input id="year"></label>
+      </div>
+    </div>
+
+    <!-- текст -->
+    <div class="pane" id="p-body">
+      <details class="help">
+        <summary>Как подготовить текст</summary>
+        <div>
+          Просто вставьте текст из Word или заметок — каждый абзац с новой строки. Программа сама узнает:
+          <br>• разделы <code>ВВЕДЕНИЕ</code>, <code>ЗАКЛЮЧЕНИЕ</code>, <code>ПРИЛОЖЕНИЕ А</code>;
+          <br>• главы: <code># Название</code> или <code>1 Название</code>; подразделы: <code>## Название</code> или <code>1.1 Название</code> — нумерация расставится сама;
+          <br>• списки: строки, начинающиеся с <code>-</code>, <code>•</code> или <code>1)</code>;
+          <br>• таблицы: строка <code>Таблица: Название</code>, а под ней строки, скопированные из Excel (через Tab) или через <code>|</code>;
+          <br>• рисунки: <code>Рисунок: Название</code> — появится подпись, саму картинку вставьте в Word;
+          <br>• список литературы можно вписать в текст после заголовка <code>СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ</code> или собрать на вкладке «Источники».
+          <br>Кавычки станут «ёлочками», дефисы между словами — тире, лишние пробелы уберутся.
+        </div>
+      </details>
+      <textarea id="text" spellcheck="true"></textarea>
+      <div class="stats" id="stats"></div>
+    </div>
+
+    <!-- источники -->
+    <div class="pane" id="p-refs">
+      <p class="hint">Заполните поля — запись оформится по ГОСТ Р 7.0.100-2018. Можно просто вставить готовые строки в поле внизу.</p>
+      <div id="refs" style="display:grid; gap:10px"></div>
+      <div class="two">
+        <button class="add" data-add="book">+ Книга</button>
+        <button class="add" data-add="article">+ Статья</button>
+        <button class="add" data-add="web">+ Сайт</button>
+        <button class="add" data-add="law">+ Закон, ГОСТ</button>
+      </div>
+      <label>Готовые записи — каждая с новой строки<textarea id="rawRefs" rows="5"></textarea></label>
+      <label class="check"><input type="checkbox" id="sortRefs"> Сортировать по алфавиту (законы — первыми)</label>
+    </div>
+
+    <!-- настройки -->
+    <div class="pane" id="p-opts">
+      <div class="card">
+        <h4>Шрифт и абзацы</h4>
+        <div class="two">
+          <label>Размер шрифта<select id="size"><option value="14">14 pt</option><option value="12">12 pt</option></select></label>
+          <label>Интервал<select id="spacing"><option value="1.5">полуторный</option><option value="1">одинарный</option></select></label>
+        </div>
+        <p class="hint">Times New Roman, отступ первой строки 1,25 см, выравнивание по ширине.</p>
+      </div>
+      <div class="card">
+        <h4>Поля, мм</h4>
+        <div class="two">
+          <label>Левое<input id="mL" type="number" min="10" max="40"></label>
+          <label>Правое<input id="mR" type="number" min="10" max="40"></label>
+          <label>Верхнее<input id="mT" type="number" min="10" max="40"></label>
+          <label>Нижнее<input id="mB" type="number" min="10" max="40"></label>
+        </div>
+        <p class="hint">По ГОСТ 7.32-2017: левое 30, правое 15, верхнее и нижнее 20. Если методичка вуза требует другое — поменяйте.</p>
+      </div>
+      <div class="card">
+        <h4>Структура</h4>
+        <label class="check"><input type="checkbox" id="toc"> Оглавление (СОДЕРЖАНИЕ)</label>
+        <label class="check"><input type="checkbox" id="newPage"> Каждый раздел с новой страницы</label>
+        <label class="check"><input type="checkbox" id="typo"> Типограф: «ёлочки», тире, пробелы</label>
+      </div>
+      <div class="card">
+        <h4>Данные</h4>
+        <p class="hint">Всё сохраняется в этом браузере автоматически.</p>
+        <button class="add" id="reset">Очистить и начать новую работу</button>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="bar">
+      <span class="warn" id="warn"></span>
+      <span class="grow"></span>
+      <button class="btn" id="download">Скачать Word (.docx)</button>
+    </div>
+    <div class="paper" id="paper"></div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================ данные
+const KINDS = {
+  practice: { title: "ОТЧЁТ", sub: (s) => "по " + (s.practice || "практике"), org: true },
+  course:   { title: "КУРСОВАЯ РАБОТА", sub: (s) => s.disc ? "по дисциплине «" + s.disc + "»" : "", org: false },
+  essay:    { title: "РЕФЕРАТ", sub: (s) => s.disc ? "по дисциплине «" + s.disc + "»" : "", org: false },
+  lab:      { title: "ЛАБОРАТОРНАЯ РАБОТА", sub: (s) => s.disc ? "по дисциплине «" + s.disc + "»" : "", org: false },
+};
+
+const SAMPLE_TEXT = `ВВЕДЕНИЕ
+Производственная практика проходила в организации, которая занимается разработкой программного обеспечения и аналитикой данных. Цель практики - закрепить знания, полученные в университете, и получить опыт работы в команде.
+Задачи практики:
+- изучить структуру организации и её основные направления работы;
+- освоить инструменты, которые используются в отделе разработки;
+- выполнить индивидуальное задание и подготовить отчёт.
+# Общая характеристика организации
+## Структура и направления деятельности
+Организация оказывает услуги по разработке веб-приложений и анализу данных для малого и среднего бизнеса. В её состав входят отдел разработки, отдел аналитики и административная служба.
+Таблица: Основные подразделения организации
+Подразделение	Задачи	Сотрудников
+Отдел разработки	Создание и поддержка приложений	8
+Отдел аналитики	Обработка и визуализация данных	4
+Администрация	Управление и документооборот	3
+## Используемые технологии
+В работе применяются языки Python и JavaScript, системы управления базами данных PostgreSQL и SQLite, а также система контроля версий Git.
+# Индивидуальное задание
+## Постановка задачи
+Требовалось разработать программу для автоматизации рутинной задачи отдела. Программа должна быть удобной для сотрудников без технической подготовки.
+## Результаты
+Программа разработана, протестирована и передана сотрудникам отдела. Время на выполнение задачи сократилось примерно в три раза.
+Рисунок: Главное окно программы
+ЗАКЛЮЧЕНИЕ
+В ходе практики были изучены структура и направления работы организации, освоены инструменты разработки и выполнено индивидуальное задание. Полученный опыт будет полезен при подготовке выпускной квалификационной работы.`;
+
+const DEFAULTS = {
+  kind: "practice", ministry: "МИНИСТЕРСТВО НАУКИ И ВЫСШЕГО ОБРАЗОВАНИЯ РОССИЙСКОЙ ФЕДЕРАЦИИ",
+  uni: "Федеральное государственное автономное образовательное учреждение высшего образования «Название университета»",
+  faculty: "Институт цифрового развития", dept: "Кафедра информационных систем",
+  practice: "производственной (технологической) практике", org: "", disc: "", topic: "",
+  student: "Иванов Иван Иванович", group: "ИСТ-б-о-22-1", supPos: "доцент кафедры", sup: "Петров Пётр Петрович",
+  orgSupPos: "", orgSup: "", city: "Ставрополь", year: String(new Date().getFullYear()),
+  text: SAMPLE_TEXT,
+  refs: [
+    { t: "book", a: "Гагарина Л. Г., Кокорева Е. В.", n: "Технология разработки программного обеспечения", k: "учебное пособие", c: "Москва", p: "ФОРУМ : ИНФРА-М", y: "2023", pg: "400" },
+    { t: "web", n: "Документация Python", s: "Python Software Foundation", u: "https://docs.python.org/3/", d: "" },
+  ],
+  rawRefs: "", sortRefs: false,
+  size: "14", spacing: "1.5", mL: 30, mR: 15, mT: 20, mB: 20, toc: true, newPage: true, typo: true,
+};
+
+const $ = (id) => document.getElementById(id);
+let S = load() || JSON.parse(JSON.stringify(DEFAULTS));
+function load() { try { const s = localStorage.getItem("gost-mysik"); return s ? Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), JSON.parse(s)) : null; } catch (e) { return null; } }
+function save() { try { localStorage.setItem("gost-mysik", JSON.stringify(S)); } catch (e) {} }
+function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("show"), 3000); }
+const escH = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// ============================================================ имена и типограф
+function parseName(full) {
+  // «Иванов Иван Иванович», «Иванов И. И.», «Иванов И.И.» → { last, ini: "И. И." }
+  const s = String(full || "").replace(/\s+/g, " ").trim();
+  if (!s) return null;
+  const m = s.match(/^([А-ЯЁA-Z][^\s,.]*(?:-[А-ЯЁA-Z][^\s,.]*)?)[,\s]+(.*)$/);
+  if (!m) return { last: s, ini: "" };
+  const rest = m[2].replace(/\./g, ". ").split(/\s+/).filter(Boolean).map((p) => p[0].toUpperCase() + ".");
+  return { last: m[1], ini: rest.join(" ") };
+}
+const shortName = (full) => { const n = parseName(full); return n ? (n.ini ? n.ini + " " + n.last : n.last) : ""; };   // И. И. Иванов
+const listName = (full) => { const n = parseName(full); return n ? (n.ini ? n.last + ", " + n.ini : n.last) : ""; };   // Иванов, И. И.
+
+function typo(s) {
+  if (!S.typo) return s;
+  return s
+    .replace(/[ \t ]+/g, " ")
+    .replace(/(^|[\s(\[«])"(?=\S)/g, "$1«").replace(/(\S)"(?=[\s.,;:!?)\]»]|$)/g, "$1»")
+    .replace(/ -{1,2} /g, " – ").replace(/ — /g, " – ")
+    .replace(/(\d)\s*-\s*(\d)/g, "$1–$2")
+    .replace(/\.\.\./g, "…")
+    .replace(/ ([,.;:!?)])/g, "$1")
+    .trim();
+}
+
+// ============================================================ разбор текста
+const STRUCT = ["введение", "заключение", "содержание", "оглавление", "реферат", "аннотация", "термины и определения",
+  "перечень сокращений и обозначений", "список сокращений", "определения", "обозначения и сокращения",
+  "список использованных источников", "список литературы", "список источников", "список использованной литературы", "библиографический список"];
+const REFS_HEAD = /^(список (использованных )?(источников|литературы)|список использованной литературы|библиографический список)$/;
+
+function parseText(text) {
+  const lines = String(text || "").split(/\r?\n/);
+  const blocks = [];
+  let h1 = 0, h2 = 0, tables = 0, figs = 0, inRefs = false, appendix = false;
+  const textRefs = [];
+  for (let i = 0; i < lines.length; i++) {
+    let raw = lines[i].replace(/\s+$/, "");
+    const line = raw.trim();
+    if (!line) continue;
+    const low = line.toLowerCase().replace(/[.:]+$/, "").trim();
+
+    // структурные заголовки
+    if (STRUCT.includes(low) || /^приложение\s+[а-яa-z0-9]/i.test(line) && line.length < 90) {
+      inRefs = REFS_HEAD.test(low);
+      if (low === "содержание" || low === "оглавление") continue;            // соберём сами
+      if (inRefs) { blocks.push({ t: "refs" }); continue; }
+      appendix = /^приложение/i.test(line);
+      blocks.push({ t: "st", text: line.replace(/[.:]+$/, "").toUpperCase(), appendix });
+      continue;
+    }
+    if (inRefs) { textRefs.push(line.replace(/^\d+[.)]?\s+/, "")); continue; }
+
+    // главы и подразделы
+    let m;
+    if ((m = line.match(/^##\s+(.+)$/)) || ((m = line.match(/^\d+\.\d+\.?\s+(\S.*)$/)) && isHeading(m[1]))) {
+      if (h1 === 0) h1 = 1;
+      h2++;
+      blocks.push({ t: "h2", num: h1 + "." + h2, text: clean(m[1]) });
+      continue;
+    }
+    if ((m = line.match(/^#\s+(.+)$/)) || ((m = line.match(/^\d+\.?\s+(\S.*)$/)) && isHeading(m[1]) && !/^\d+\)/.test(line))) {
+      h1++; h2 = 0;
+      blocks.push({ t: "h1", num: String(h1), text: clean(m[1]) });
+      continue;
+    }
+
+    // таблица
+    if ((m = line.match(/^таблица\s*[:—–-]?\s*(?:\d+\s*[—–-]\s*)?(.*)$/i)) && (lines[i + 1] || "").match(/\t|\|/)) {
+      const rows = [];
+      while (i + 1 < lines.length && /\t|\|/.test(lines[i + 1])) {
+        i++;
+        const cells = lines[i].includes("\t") ? lines[i].split("\t") : lines[i].replace(/^\s*\||\|\s*$/g, "").split("|");
+        if (cells.every((c) => /^\s*:?-{2,}:?\s*$/.test(c))) continue;  // разделитель markdown
+        rows.push(cells.map((c) => typo(c.trim())));
+      }
+      const w = Math.max(...rows.map((r) => r.length));
+      rows.forEach((r) => { while (r.length < w) r.push(""); });
+      tables++;
+      blocks.push({ t: "table", num: appendix ? null : tables, caption: clean(m[1]), rows });
+      continue;
+    }
+    if ((m = line.match(/^рисунок\s*[:—–-]?\s*(?:\d+\s*[—–-]\s*)?(.+)$/i))) {
+      figs++;
+      blocks.push({ t: "fig", num: figs, text: clean(m[1]) });
+      continue;
+    }
+
+    // списки
+    if ((m = line.match(/^[-–—•*·]\s+(.+)$/))) { blocks.push({ t: "li", mark: "–", text: typo(m[1]) }); continue; }
+    if ((m = line.match(/^(\d+|[а-я])\)\s+(.+)$/))) { blocks.push({ t: "li", mark: m[1] + ")", text: typo(m[2]) }); continue; }
+
+    blocks.push({ t: "p", text: typo(line) });
+  }
+  return { blocks, textRefs, stats: { h1, tables, figs } };
+}
+function isHeading(s) { return s.length < 130 && /^[А-ЯЁA-Z]/.test(s) && !/[.;,:]$/.test(s); }
+function clean(s) { return typo(String(s).replace(/[.]+$/, "")); }
+
+// ============================================================ источники (ГОСТ Р 7.0.100-2018, упрощённо)
+const DASH = " – ";
+function today() { const d = new Date(); return String(d.getDate()).padStart(2, "0") + "." + String(d.getMonth() + 1).padStart(2, "0") + "." + d.getFullYear(); }
+function authors(a) { return String(a || "").split(/[,;]\s*(?=[А-ЯЁA-Z][а-яёa-z-]+[\s,]+[А-ЯЁA-Z])/).map((x) => x.trim()).filter(Boolean); }
+function formatRef(r) {
+  const T = (s) => typo(String(s || "").trim());
+  if (r.t === "book") {
+    const au = authors(r.a);
+    const head = au.length && au.length <= 3 ? listName(au[0]) + " " : "";
+    let s = head + T(r.n) + (r.k ? " : " + T(r.k) : "");
+    if (au.length) s += " / " + au.slice(0, 3).map(shortName).join(", ") + (au.length > 3 ? " [и др.]" : "");
+    s += DASH + [T(r.c), T(r.p)].filter(Boolean).join(" : ") + (r.y ? ", " + T(r.y) : "") + ".";
+    if (r.pg) s += DASH + T(r.pg).replace(/\s*с\.?$/, "") + " с.";
+    return s.replace(/\s+–\s+\./, ".").replace(/\.\./g, ".");
+  }
+  if (r.t === "article") {
+    const au = authors(r.a);
+    let s = (au.length && au.length <= 3 ? listName(au[0]) + " " : "") + T(r.n);
+    if (au.length) s += " / " + au.slice(0, 3).map(shortName).join(", ") + (au.length > 3 ? " [и др.]" : "");
+    s += " // " + T(r.j) + (r.y ? DASH + T(r.y) + "." : "") + (r.no ? DASH + "№ " + T(r.no).replace(/^№\s*/, "") + "." : "") +
+         (r.pp ? DASH + "С. " + T(r.pp).replace(/^с\.?\s*/i, "").replace(/-/g, "–") + "." : "");
+    return s.replace(/\.\./g, ".");
+  }
+  if (r.t === "web") {
+    return T(r.n) + (r.s ? " // " + T(r.s) : "") + " : [сайт]." + DASH + "URL: " + String(r.u || "").trim() +
+           " (дата обращения: " + (String(r.d || "").trim() || today()) + ").";
+  }
+  return T(r.n);
+}
+const REF_FIELDS = {
+  book: [["a", "Авторы — через запятую", "Иванов И. И., Петров П. П."], ["n", "Название"], ["k", "Вид издания", "учебник / учебное пособие / монография"],
+         ["c", "Город", "Москва"], ["p", "Издательство", "Юрайт"], ["y", "Год"], ["pg", "Страниц"]],
+  article: [["a", "Авторы — через запятую"], ["n", "Название статьи"], ["j", "Журнал или сборник"], ["y", "Год"], ["no", "Номер"], ["pp", "Страницы", "15–20"]],
+  web: [["n", "Название страницы"], ["s", "Название сайта"], ["u", "Адрес (URL)"], ["d", "Дата обращения", "сегодня"]],
+  law: [["n", "Полная запись", "Российская Федерация. Законы. О персональных данных : Федеральный закон № 152-ФЗ : [принят Государственной думой 8 июля 2006 года]. – Москва, 2006."]],
+};
+const REF_TYPE = { book: "Книга", article: "Статья", web: "Сайт", law: "Закон, ГОСТ, документ" };
+function allRefs(textRefs) {
+  let list = S.refs.map((r) => ({ text: formatRef(r), law: r.t === "law" })).filter((r) => r.text.replace(/[\s.:/–]/g, "").length > 3);
+  list = list.concat(String(S.rawRefs || "").split(/\r?\n/).map((l) => l.trim().replace(/^\d+[.)]?\s+/, "")).filter(Boolean).map((t) => ({ text: typo(t), law: /^российская федерация|^гост|кодекс|федеральный закон/i.test(t) })));
+  list = list.concat((textRefs || []).map((t) => ({ text: typo(t), law: /^российская федерация|^гост|кодекс|федеральный закон/i.test(t) })));
+  if (S.sortRefs) list.sort((a, b) => (b.law - a.law) || a.text.localeCompare(b.text, "ru"));
+  return list.map((r) => r.text);
+}
+
+// ============================================================ модель документа
+function buildModel() {
+  const { blocks, textRefs, stats } = parseText(S.text);
+  const refs = allRefs(textRefs);
+  const out = blocks.slice();
+  // список источников: туда, где был заголовок, иначе перед приложениями или в конец
+  const at = out.findIndex((b) => b.t === "refs");
+  if (refs.length) {
+    const sec = [{ t: "st", text: "СПИСОК ИСПОЛЬЗОВАННЫХ ИСТОЧНИКОВ" }].concat(refs.map((r, i) => ({ t: "ref", text: (i + 1) + ". " + r })));
+    if (at >= 0) out.splice(at, 1, ...sec);
+    else {
+      const app = out.findIndex((b) => b.t === "st" && b.appendix);
+      out.splice(app >= 0 ? app : out.length, 0, ...sec);
+    }
+  } else if (at >= 0) out.splice(at, 1);
+  return { blocks: out, stats, refs };
+}
+
+function headingText(b) { return b.t === "st" ? b.text : b.num + " " + b.text; }
+
+// ============================================================ предпросмотр
+function titleData() {
+  const k = KINDS[S.kind] || KINDS.practice;
+  return { k, sub: k.sub(S), topic: typo(S.topic || ""), ministry: S.ministry, uni: typo(S.uni), faculty: S.faculty, dept: S.dept };
+}
+function signLines() {
+  const L = [];
+  const studentWord = /а$/.test((parseName(S.student) || {}).last || "") ? "Выполнила" : "Выполнил";
+  L.push([studentWord + ": студент" + (studentWord === "Выполнила" ? "ка" : "") + (S.group ? " группы " + S.group : ""), shortName(S.student)]);
+  if (S.sup) L.push(["Руководитель" + (S.kind === "practice" ? " практики от университета" : "") + (S.supPos ? ": " + S.supPos : ":"), shortName(S.sup)]);
+  if (S.kind === "practice" && S.orgSup) L.push(["Руководитель практики от организации" + (S.orgSupPos ? ": " + S.orgSupPos : ":"), shortName(S.orgSup)]);
+  return L;
+}
+
+function renderPreview() {
+  const model = buildModel();
+  const td = titleData();
+  const pages = [];
+  // титульный лист
+  let t = `<div class="title">`;
+  t += `<p>${escH(td.ministry)}</p><p>${escH(td.uni)}</p>`;
+  if (td.faculty) t += `<p>${escH(td.faculty)}</p>`;
+  if (td.dept) t += `<p>${escH(td.dept)}</p>`;
+  t += `<div class="grow"></div><p><b>${td.k.title}</b></p>`;
+  if (td.sub) t += `<p>${escH(td.sub)}</p>`;
+  if (S.kind === "practice" && S.org) t += `<p>в ${escH(typo(S.org))}</p>`;
+  if (td.topic) t += `<p>на тему: «${escH(td.topic.replace(/^«|»$/g, ""))}»</p>`;
+  t += `<div class="grow"></div>`;
+  signLines().forEach(([a, b]) => { t += `<p class="sign">${escH(a)}<br>________________ ${escH(b)}</p><p class="sign">&nbsp;</p>`; });
+  t += `<div class="grow"></div><p>${escH(S.city)} ${escH(S.year)}</p></div>`;
+  pages.push(t);
+
+  // содержание
+  const heads = model.blocks.filter((b) => b.t === "st" || b.t === "h1" || b.t === "h2");
+  if (S.toc && heads.length) {
+    const est = estimatePages(model);
+    pages.push(`<p class="st">СОДЕРЖАНИЕ</p>` + heads.map((h, i) =>
+      `<p class="toc ${h.t === "h2" ? "l2" : ""}"><span>${escH(h.t === "st" ? cap(h.text) : headingText(h))}</span><span></span><span>${est[i]}</span></p>`).join(""));
+  }
+
+  // текст: новая страница перед каждым разделом
+  let cur = "";
+  model.blocks.forEach((b) => {
+    if ((b.t === "st" || b.t === "h1") && S.newPage && cur) { pages.push(cur); cur = ""; }
+    cur += blockHtml(b);
+  });
+  if (cur) pages.push(cur);
+
+  $("paper").innerHTML = pages.map((p, i) => `<div class="page">${p}${i > 0 ? `<div class="num">${i + 1}</div>` : ""}</div>`).join("");
+  const st = model.stats;
+  $("stats").innerHTML = [`<span class="chip">глав: <b>${st.h1}</b></span>`, `<span class="chip">таблиц: <b>${st.tables}</b></span>`,
+    `<span class="chip">рисунков: <b>${st.figs}</b></span>`, `<span class="chip">источников: <b>${model.refs.length}</b></span>`].join("");
+  const warn = [];
+  if (!S.student.trim()) warn.push("не указано ФИО студента");
+  if (!S.topic.trim() && S.kind !== "lab") warn.push("не указана тема");
+  if (S.text === SAMPLE_TEXT) warn.push("в тексте пример — замените своим");
+  $("warn").textContent = warn.length ? "Обратите внимание: " + warn.join(", ") : "";
+}
+const cap = (s) => s.charAt(0) + s.slice(1).toLowerCase();
+function blockHtml(b) {
+  switch (b.t) {
+    case "st": return `<p class="st">${escH(b.text)}</p>`;
+    case "h1": return `<p class="h1">${escH(b.num + " " + b.text)}</p>`;
+    case "h2": return `<p class="h2">${escH(b.num + " " + b.text)}</p>`;
+    case "li": return `<p>${escH(b.mark)} ${escH(b.text)}</p>`;
+    case "ref": return `<p>${escH(b.text)}</p>`;
+    case "fig": return `<p class="fig">[место для рисунка]</p><p class="fig">Рисунок ${b.num} – ${escH(b.text)}</p>`;
+    case "table": return `<p class="cap">${b.num ? "Таблица " + b.num + " – " : ""}${escH(b.caption)}</p><table>${b.rows.map((r) => `<tr>${r.map((c) => `<td>${escH(c)}</td>`).join("")}</tr>`).join("")}</table>`;
+    default: return `<p>${escH(b.text)}</p>`;
+  }
+}
+// Примерные номера страниц для оглавления (Word уточнит их при открытии).
+function estimatePages(model) {
+  const size = +S.size, sp = +S.spacing;
+  const textW = 210 - S.mL - S.mR, textH = 297 - S.mT - S.mB;
+  const charsPerLine = textW / (size * 0.353 * 0.47);
+  const linesPerPage = textH / (size * 0.353 * sp * 1.15);
+  let page = 2 + (S.toc ? 1 : 0), used = 0;
+  const res = [];
+  model.blocks.forEach((b) => {
+    if ((b.t === "st" || b.t === "h1") && S.newPage && used > 0) { page++; used = 0; }
+    if (b.t === "st" || b.t === "h1" || b.t === "h2") res.push(page);
+    let lines = b.t === "table" ? b.rows.length * 1.6 + 2 : b.t === "fig" ? 12 : Math.ceil(((b.text || "").length + 6) / charsPerLine) + (b.t === "h2" ? 1 : 0);
+    used += lines;
+    while (used > linesPerPage) { page++; used -= linesPerPage; }
+  });
+  return res;
+}
+
+// ============================================================ Word (.docx): свой генератор
+const X = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const mm = (v) => Math.round(v * 56.6929);
+function run(text, opt) {
+  opt = opt || {};
+  const rpr = (opt.b ? "<w:b/>" : "") + (opt.i ? "<w:i/>" : "") + (opt.sz ? `<w:sz w:val="${opt.sz}"/><w:szCs w:val="${opt.sz}"/>` : "");
+  return `<w:r>${rpr ? `<w:rPr>${rpr}</w:rPr>` : ""}<w:t xml:space="preserve">${X(text)}</w:t></w:r>`;
+}
+function para(content, ppr) { return `<w:p>${ppr ? `<w:pPr>${ppr}</w:pPr>` : ""}${content}</w:p>`; }
+
+function docxParts() {
+  const model = buildModel();
+  const td = titleData();
+  const half = (+S.size) * 2;
+  const line = Math.round(240 * (+S.spacing));
+  const textW = mm(210 - S.mL - S.mR);
+  const body = [];
+  const brk = S.newPage ? `<w:pageBreakBefore/>` : "";
+
+  // --- титульный лист (без номера страницы)
+  const T = (text, opt, extra) => para(run(text, opt), `<w:pStyle w:val="TitleText"/>${extra || ""}`);
+  body.push(T(td.ministry));
+  body.push(T(td.uni));
+  if (td.faculty) body.push(T(td.faculty));
+  if (td.dept) body.push(T(td.dept));
+  body.push(T("", null, `<w:spacing w:before="2400"/>`));
+  body.push(T(td.k.title, { b: true, sz: half + 4 }));
+  if (td.sub) body.push(T(td.sub));
+  if (S.kind === "practice" && S.org) body.push(T("в " + typo(S.org)));
+  if (td.topic) body.push(T("на тему: «" + td.topic.replace(/^«|»$/g, "") + "»", null, `<w:spacing w:before="120"/>`));
+  body.push(T("", null, `<w:spacing w:before="1600"/>`));
+  signLines().forEach(([a, b]) => {
+    body.push(para(run(a), `<w:pStyle w:val="TitleText"/><w:jc w:val="left"/><w:ind w:left="${mm(85)}"/>`));
+    body.push(para(run("________________ " + b), `<w:pStyle w:val="TitleText"/><w:jc w:val="left"/><w:ind w:left="${mm(85)}"/><w:spacing w:after="240"/>`));
+  });
+  // город и год — прижаты к низу листа
+  body.push(para(run(S.city + " " + S.year), `<w:pStyle w:val="TitleText"/><w:framePr w:w="${textW}" w:hAnchor="margin" w:vAnchor="margin" w:xAlign="center" w:yAlign="bottom"/>`));
+
+  // --- содержание
+  const heads = model.blocks.filter((b) => b.t === "st" || b.t === "h1" || b.t === "h2");
+  if (S.toc && heads.length) {
+    body.push(para(run("СОДЕРЖАНИЕ", { b: true }), `<w:pStyle w:val="NoIndent"/><w:pageBreakBefore/><w:jc w:val="center"/><w:spacing w:after="240"/>`));
+    const est = estimatePages(model);
+    heads.forEach((h, i) => {
+      let r = "";
+      if (i === 0) r += `<w:r><w:fldChar w:fldCharType="begin" w:dirty="true"/></w:r><w:r><w:instrText xml:space="preserve"> TOC \\o "1-2" \\h \\z \\u </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r>`;
+      r += run(h.t === "st" ? cap(h.text) : headingText(h)) + `<w:r><w:tab/></w:r>` + run(String(est[i]));
+      if (i === heads.length - 1) r += `<w:r><w:fldChar w:fldCharType="end"/></w:r>`;
+      body.push(para(r, `<w:pStyle w:val="${h.t === "h2" ? "TOC2" : "TOC1"}"/>`));
+    });
+  }
+
+  // --- основной текст
+  let first = true;
+  model.blocks.forEach((b) => {
+    const pb = (b.t === "st" || b.t === "h1") ? (S.newPage || first ? `<w:pageBreakBefore/>` : "") : "";
+    if (b.t === "st" || b.t === "h1") first = false;
+    switch (b.t) {
+      case "st": body.push(para(run(b.text), `<w:pStyle w:val="Heading1"/>${pb}<w:jc w:val="center"/><w:ind w:firstLine="0"/>`)); break;
+      case "h1": body.push(para(run(b.num + " " + b.text), `<w:pStyle w:val="Heading1"/>${pb}`)); break;
+      case "h2": body.push(para(run(b.num + " " + b.text), `<w:pStyle w:val="Heading2"/>`)); break;
+      case "li": body.push(para(run(b.mark + " " + b.text))); break;
+      case "ref": body.push(para(run(b.text))); break;
+      case "fig":
+        body.push(para(run("[место для рисунка — вставьте картинку сюда]", { i: true }), `<w:pStyle w:val="NoIndent"/><w:jc w:val="center"/><w:spacing w:before="240"/>`));
+        body.push(para(run("Рисунок " + b.num + " – " + b.text), `<w:pStyle w:val="NoIndent"/><w:jc w:val="center"/><w:spacing w:after="240"/>`));
+        break;
+      case "table": {
+        body.push(para(run((b.num ? "Таблица " + b.num + " – " : "") + b.caption), `<w:pStyle w:val="NoIndent"/><w:keepNext/><w:spacing w:before="240"/>`));
+        const cols = b.rows[0] ? b.rows[0].length : 1;
+        const cw = Math.floor(textW / cols);
+        const borders = ["top", "left", "bottom", "right", "insideH", "insideV"].map((s) => `<w:${s} w:val="single" w:sz="4" w:space="0" w:color="000000"/>`).join("");
+        let tbl = `<w:tbl><w:tblPr><w:tblW w:w="${textW}" w:type="dxa"/><w:tblBorders>${borders}</w:tblBorders><w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="85" w:type="dxa"/><w:right w:w="85" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${"<w:gridCol w:w=\"" + cw + "\"/>".repeat(cols)}</w:tblGrid>`;
+        b.rows.forEach((r, ri) => {
+          tbl += `<w:tr>${ri === 0 ? "<w:trPr><w:tblHeader/></w:trPr>" : ""}` + r.map((c) =>
+            `<w:tc><w:tcPr><w:tcW w:w="${cw}" w:type="dxa"/></w:tcPr>${para(run(c, ri === 0 ? { b: true } : null), `<w:pStyle w:val="TableText"/>${ri === 0 ? `<w:jc w:val="center"/>` : ""}`)}</w:tc>`).join("") + `</w:tr>`;
+        });
+        tbl += `</w:tbl>`;
+        body.push(tbl);
+        body.push(para("", `<w:pStyle w:val="NoIndent"/>`));
+        break;
+      }
+      default: body.push(para(run(b.text)));
+    }
+  });
+
+  const sect = `<w:sectPr><w:footerReference w:type="default" r:id="rIdFooter"/><w:pgSz w:w="11906" w:h="16838"/>` +
+    `<w:pgMar w:top="${mm(S.mT)}" w:right="${mm(S.mR)}" w:bottom="${mm(S.mB)}" w:left="${mm(S.mL)}" w:header="709" w:footer="567" w:gutter="0"/><w:titlePg/></w:sectPr>`;
+  const NS = `xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"`;
+  const HDR = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n`;
+  const document = HDR + `<w:document ${NS}><w:body>${body.join("")}${sect}</w:body></w:document>`;
+
+  const font = `<w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman" w:eastAsia="Times New Roman"/>`;
+  const styles = HDR + `<w:styles ${NS}>
+<w:docDefaults><w:rPrDefault><w:rPr>${font}<w:sz w:val="${half}"/><w:szCs w:val="${half}"/><w:lang w:val="ru-RU" w:eastAsia="ru-RU" w:bidi="ar-SA"/></w:rPr></w:rPrDefault>
+<w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="${line}" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>
+<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/><w:pPr><w:jc w:val="both"/><w:ind w:firstLine="709"/></w:pPr></w:style>
+<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:keepLines/><w:spacing w:after="${line}"/><w:jc w:val="left"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:bCs/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:keepLines/><w:spacing w:before="${line}" w:after="${line}"/><w:jc w:val="left"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:bCs/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="NoIndent"><w:name w:val="Без отступа"/><w:basedOn w:val="Normal"/><w:pPr><w:ind w:firstLine="0"/><w:jc w:val="left"/></w:pPr></w:style>
+<w:style w:type="paragraph" w:styleId="TitleText"><w:name w:val="Титульный лист"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:line="240" w:lineRule="auto"/><w:ind w:firstLine="0"/><w:jc w:val="center"/></w:pPr></w:style>
+<w:style w:type="paragraph" w:styleId="TableText"><w:name w:val="Текст таблицы"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:line="240" w:lineRule="auto"/><w:ind w:firstLine="0"/><w:jc w:val="left"/></w:pPr><w:rPr><w:sz w:val="${Math.max(20, half - 4)}"/><w:szCs w:val="${Math.max(20, half - 4)}"/></w:rPr></w:style>
+<w:style w:type="paragraph" w:styleId="TOC1"><w:name w:val="toc 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:tabs><w:tab w:val="right" w:leader="dot" w:pos="${textW}"/></w:tabs><w:ind w:firstLine="0"/><w:jc w:val="left"/></w:pPr></w:style>
+<w:style w:type="paragraph" w:styleId="TOC2"><w:name w:val="toc 2"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:pPr><w:tabs><w:tab w:val="right" w:leader="dot" w:pos="${textW}"/></w:tabs><w:ind w:left="280" w:firstLine="0"/><w:jc w:val="left"/></w:pPr></w:style>
+<w:style w:type="paragraph" w:styleId="Footer"><w:name w:val="footer"/><w:basedOn w:val="Normal"/><w:pPr><w:ind w:firstLine="0"/><w:jc w:val="center"/><w:spacing w:line="240" w:lineRule="auto"/></w:pPr></w:style>
+</w:styles>`;
+  const footer = HDR + `<w:ftr ${NS}><w:p><w:pPr><w:pStyle w:val="Footer"/></w:pPr><w:r><w:fldChar w:fldCharType="begin"/></w:r><w:r><w:instrText xml:space="preserve"> PAGE </w:instrText></w:r><w:r><w:fldChar w:fldCharType="separate"/></w:r><w:r><w:t>2</w:t></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p></w:ftr>`;
+  const settings = HDR + `<w:settings ${NS}><w:updateFields w:val="true"/><w:defaultTabStop w:val="709"/><w:characterSpacingControl w:val="doNotCompress"/><w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat></w:settings>`;
+  const now = new Date().toISOString().replace(/\.\d+Z$/, "Z");
+  const core = HDR + `<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">` +
+    `<dc:title>${X(td.topic || td.k.title)}</dc:title><dc:creator>${X(S.student)}</dc:creator><cp:lastModifiedBy>Оформитель by mysik</cp:lastModifiedBy>` +
+    `<dcterms:created xsi:type="dcterms:W3CDTF">${now}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${now}</dcterms:modified></cp:coreProperties>`;
+  const types = HDR + `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+    `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>` +
+    `<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>` +
+    `<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>` +
+    `<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>` +
+    `<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>` +
+    `<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>`;
+  const rels = HDR + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+    `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>` +
+    `<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>`;
+  const docRels = HDR + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+    `<Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>` +
+    `<Relationship Id="rIdSettings" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/>` +
+    `<Relationship Id="rIdFooter" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/></Relationships>`;
+  return [["[Content_Types].xml", types], ["_rels/.rels", rels], ["docProps/core.xml", core], ["word/document.xml", document],
+          ["word/styles.xml", styles], ["word/settings.xml", settings], ["word/footer1.xml", footer], ["word/_rels/document.xml.rels", docRels]];
+}
+
+// ZIP без сжатия (store) — Word такие файлы открывает.
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function zip(files) {
+  const enc = new TextEncoder(), chunks = [], central = [];
+  let offset = 0;
+  const d = new Date();
+  const time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  const date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  for (const [name, text] of files) {
+    const nm = enc.encode(name), data = enc.encode(text), crc = crc32(data);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+    h.setUint16(10, time, true); h.setUint16(12, date, true); h.setUint32(14, crc, true); h.setUint32(18, data.length, true);
+    h.setUint32(22, data.length, true); h.setUint16(26, nm.length, true); h.setUint16(28, 0, true);
+    chunks.push(new Uint8Array(h.buffer), nm, data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, 0, true);
+    c.setUint16(12, time, true); c.setUint16(14, date, true); c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true);
+    c.setUint16(28, nm.length, true); c.setUint32(42, offset, true);
+    central.push(new Uint8Array(c.buffer), nm);
+    offset += 30 + nm.length + data.length;
+  }
+  const cdSize = central.reduce((s, a) => s + a.length, 0);
+  const e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true);
+  e.setUint32(12, cdSize, true); e.setUint32(16, offset, true);
+  return new Blob([...chunks, ...central, new Uint8Array(e.buffer)], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+}
+
+// ============================================================ интерфейс
+const FIELDS = ["kind", "ministry", "uni", "faculty", "dept", "practice", "org", "disc", "topic", "student", "group", "supPos", "sup",
+                "orgSupPos", "orgSup", "city", "year", "text", "rawRefs", "size", "spacing", "mL", "mR", "mT", "mB"];
+const CHECKS = ["sortRefs", "toc", "newPage", "typo"];
+let timer;
+function changed() { save(); clearTimeout(timer); timer = setTimeout(renderPreview, 200); }
+function fill() {
+  FIELDS.forEach((f) => { $(f).value = S[f] ?? ""; });
+  CHECKS.forEach((f) => { $(f).checked = !!S[f]; });
+  kindFields();
+  renderRefs();
+}
+function kindFields() {
+  const p = S.kind === "practice";
+  $("l-practice").style.display = p ? "" : "none";
+  $("l-org").style.display = p ? "" : "none";
+  $("l-orgsup").style.display = p ? "" : "none";
+  $("l-disc").style.display = p ? "none" : "";
+}
+FIELDS.forEach((f) => $(f).addEventListener("input", () => {
+  S[f] = ["mL", "mR", "mT", "mB"].includes(f) ? Math.min(40, Math.max(10, +$(f).value || 20)) : $(f).value;
+  if (f === "kind") kindFields();
+  changed();
+}));
+CHECKS.forEach((f) => $(f).addEventListener("change", () => { S[f] = $(f).checked; changed(); }));
+document.querySelectorAll(".tabs button").forEach((b) => b.onclick = () => {
+  document.querySelectorAll(".tabs button").forEach((x) => x.classList.toggle("on", x === b));
+  document.querySelectorAll(".pane").forEach((p) => p.classList.toggle("on", p.id === "p-" + b.dataset.p));
+});
+
+function renderRefs() {
+  const box = $("refs");
+  box.innerHTML = "";
+  S.refs.forEach((r, i) => {
+    const el = document.createElement("div");
+    el.className = "src";
+    el.innerHTML = `<div class="row"><b style="font-size:13px; align-self:center">${i + 1}. ${REF_TYPE[r.t]}</b><button class="x" title="Удалить">×</button></div>` +
+      REF_FIELDS[r.t].map(([k, label, ph]) => `<label>${label}<input data-k="${k}" placeholder="${escH(ph || "")}" value="${escH(r[k] || "")}"></label>`).join("") +
+      `<div class="out"></div>`;
+    const out = el.querySelector(".out");
+    const upd = () => { out.textContent = formatRef(r) || "—"; };
+    el.querySelectorAll("input").forEach((inp) => inp.oninput = () => { r[inp.dataset.k] = inp.value; upd(); changed(); });
+    el.querySelector(".x").onclick = () => { S.refs.splice(i, 1); renderRefs(); changed(); };
+    upd();
+    box.appendChild(el);
+  });
+}
+document.querySelectorAll("[data-add]").forEach((b) => b.onclick = () => {
+  S.refs.push({ t: b.dataset.add });
+  renderRefs(); changed();
+  const inputs = $("refs").lastChild.querySelectorAll("input");
+  if (inputs[0]) inputs[0].focus();
+});
+
+$("reset").onclick = () => {
+  const keep = { ministry: S.ministry, uni: S.uni, faculty: S.faculty, dept: S.dept, student: S.student, group: S.group, city: S.city };
+  S = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), keep, { text: "", topic: "", refs: [], org: "", disc: "", sup: "", supPos: "", orgSup: "", orgSupPos: "" });
+  fill(); changed(); toast("Начали новую работу — вуз, ФИО и группа сохранены");
+};
+
+$("download").onclick = () => {
+  if (!S.text.trim()) { toast("Добавьте текст работы на вкладке «Текст»"); return; }
+  const blob = zip(docxParts());
+  const name = (KINDS[S.kind].title.toLowerCase().replace(/^./, (c) => c.toUpperCase()) + " " + (parseName(S.student) || { last: "" }).last).trim()
+    .replace(/[\\/:*?"<>|]/g, "") + ".docx";
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  toast("Готово! Word спросит про обновление полей — нажмите «Да», чтобы оглавление получило точные номера страниц");
+};
+
+fill();
+renderPreview();
+</script>
+</body>
+</html>
